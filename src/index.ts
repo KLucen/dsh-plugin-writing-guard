@@ -32,6 +32,22 @@ import fs from 'node:fs/promises'
 import path from 'node:path'
 import os from 'node:os'
 
+/**
+ * DSH 0.2 removed the catch-all `source.kind: 'plugin'`. Message provenance is
+ * now a merge-extensible sum type: each producer declares its own kind in its
+ * own module, and consumers fall through kinds they do not know (0.1.x code
+ * used `{ kind: 'plugin', plugin: name }`, which 0.2 no longer accepts).
+ *
+ * Declaring our kind here keeps the notice sources type-checked against the
+ * current harness instead of casting the literal away.
+ */
+declare module '@deepseek-ai/dsh-llm' {
+  interface MessageSourceMap {
+    /** Context injected by dsh-plugin-writing-guard. */
+    'writing-guard': { kind: 'writing-guard' }
+  }
+}
+
 export const name = 'dsh-plugin-writing-guard'
 
 export const inject = ['tools']
@@ -1030,7 +1046,7 @@ export function apply(ctx: Context, config: Partial<Config> = {}): void {
           if (diff.remaining === 0) {
             const notice = createUserMessage({
               content: [{ type: 'text', text: `【dsh-plugin-writing-guard】"${target}" 写作纪律问题已全部清零 ✅` }],
-              source: { kind: 'plugin', plugin: name },
+              source: { kind: 'writing-guard' },
             })
             return { ...decision, additionalContexts: [...(decision.additionalContexts ?? []), notice] }
           }
@@ -1048,7 +1064,7 @@ export function apply(ctx: Context, config: Partial<Config> = {}): void {
 
         const notice = createUserMessage({
           content: [{ type: 'text', text }],
-          source: { kind: 'plugin', plugin: name },
+          source: { kind: 'writing-guard' },
         })
 
         // 把自动审计结果作为下一条请求的附加上下文（不阻塞本次调用）
@@ -1084,7 +1100,7 @@ export function apply(ctx: Context, config: Partial<Config> = {}): void {
         briefCounts.set(agent.id, { turn })
         ;(agent as { inject?: (msg: unknown) => void }).inject?.(createUserMessage({
           content: [{ type: 'text', text: rulesBrief() }],
-          source: { kind: 'plugin', plugin: name },
+          source: { kind: 'writing-guard' },
         }))
       } catch (error) {
         ctx.logger.warn(`dsh-plugin-writing-guard: autoBrief failed: ${error instanceof Error ? error.message : String(error)}`)

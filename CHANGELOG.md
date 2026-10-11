@@ -4,6 +4,26 @@ All notable changes to dsh-plugin-writing-guard are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 aims to follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.3] - 2026-10-11
+
+### Changed — 适配 DSH 0.2.0-rc.2（保持对 0.1.x 的兼容）
+
+- `peerDependencies` 改为多版本区间：`@deepseek-ai/dsh-tools` 与 `@deepseek-ai/dsh-llm` 由 `^0.1.0-rc.6` 改为 `^0.1.0-rc.6 || >=0.2.0-rc.1 <0.3.0-0`。
+  原区间不满足 DSH 的加载门（`semver.satisfies(runtime, range, {includePrerelease: true})`），在 0.2.0-rc.2 上以 `incompatible-version` 拒绝激活。
+- `createUserMessage` 的来源声明：DSH 0.2 移除了通用 `{ kind: 'plugin', plugin }` 来源种类（`MessageSourceMap` 改为「各产出方自行声明 kind」的可合并联合）。
+  插件改为在 `src/index.ts` 用 `declare module '@deepseek-ai/dsh-llm'` 声明自有种类 `{ kind: 'writing-guard' }`（与 DSH 内置包 `dsh-agent`、`dsh-tool-skill` 同一做法），三处通知注入点同步更新。
+- `devDependencies` 升级为 `@deepseek-ai/dsh-tools`/`@deepseek-ai/dsh-llm` `0.2.0-rc.2`、`@deepseek-ai/cordis` `4.0.4`，使 `pnpm build` 直接以当前 DSH 类型定义校验。
+
+### Verified — 两类版本共用同一份代码
+
+- `defineTool` 定义对象与 `ctx.tools.register` 在 0.1.0-rc.6 与 0.2.0-rc.2 之间无变化（`parameters` 仍为内置 JSON-Schema DSL，未改用 schemastery/zod），工具注册代码无需改动。
+- 本次 source kind 改动在 0.1.0-rc.6 与 0.2.0-rc.2 两套类型定义下均通过 `tsc --noEmit`。
+- `pnpm install && pnpm build && pnpm test` → 390 通过 / 0 失败。
+
+### Changed — 版本号统一
+
+- `package.json`、`PLUGIN_VERSION`（`src/rules.ts` 与编译产物 `lib/rules.js`）、`skills/writing-guard/manifest.yaml`、测试断言统一为 2.0.3。
+
 ## [2.0.2] - 2026-10-05
 
 ### Changed — Word Guard 同步至 word-guard v1.1.0
